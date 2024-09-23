@@ -1,0 +1,271 @@
+import uuid
+
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator, MinValueValidator
+from django.db import models
+
+from recipes.constants import (
+    MAX_LENGTH_TAG_NAME,
+    MAX_LENGTH_TAG_SLUG,
+    REGEXP_SLUG,
+    MAX_LENGTH_INGRIDIENT_NAME,
+    MAX_LENGTH_MEASURMENT_UNIT,
+    MAX_LENGTH_RECIPE_NAME,
+    MIN_COOKING_TIME_MINUTES,
+    MIN_AMOUNT_OF_INGREDIENT
+)
+from users.models import User
+
+
+class Tag(models.Model):
+    """Класс Тэга для классификации и поиска рецептов."""
+    name = models.CharField(
+        max_length=MAX_LENGTH_TAG_NAME,
+        verbose_name='Тег рецепта',
+        unique=True,
+        blank=False,
+        null=False,
+    )
+    slug = models.SlugField(
+        max_length=MAX_LENGTH_TAG_SLUG,
+        verbose_name='Слаг',
+        unique=True,
+        blank=False,
+        null=False,
+        validators=[RegexValidator(regex=REGEXP_SLUG,
+                                   message='Неверный формат')],
+    )
+
+    class Meta:
+        ordering = ('name',)
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
+    def clean(self):
+        # Чтобы избежать наличия тегов вида "burger" и "BURGER",
+        # проверим существующие теги на смысловую уникальность,
+        # игнорируя регистр.
+        if Tag.objects.filter(name__iexact=self.name).exists():
+            raise ValidationError(
+                f'Тег, по смыслу подобный "{self.name}" уже существует.')
+
+        if Tag.objects.filter(slug__iexact=self.slug).exists():
+            raise ValidationError(
+                f'Подобный слаг "{self.slug}" уже существует.')
+
+    def save(self, *args, **kwargs):
+        # Вызываем метод clean перед сохранением.
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Тег {self.name} - слаг {self.slug}.'
+
+
+class Ingredient(models.Model):
+    """Класс перечня всех возможных ингридиентов."""
+    name = models.CharField(
+        max_length=MAX_LENGTH_INGRIDIENT_NAME,
+        verbose_name='Ингредиент',
+        help_text='Ингредиент: обязательное поле',
+        blank=False,
+        null=False,
+    )
+
+    measurement_unit = models.CharField(
+        max_length=MAX_LENGTH_MEASURMENT_UNIT,
+        verbose_name='Единица измерения',
+        help_text='Единица измерения: обязательное поле',
+        blank=False,
+        null=False,
+    )
+
+    class Meta:
+        ordering = ('name',)
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'measurement_unit'],
+                name='ingredient_measurement_unit_pair_unique'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.name}, {self.measurement_unit}.'
+
+
+class Recipe(models.Model):
+    """Класс, описывающий структуру рецепта."""
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        # Промежуточная модель для хранения количества ингредиентов:
+        through='RecipeIngredient',
+        verbose_name='Перечень ингредиентов',
+        help_text='Перечень ингридиентов: обязательное поле',
+        blank=False,
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        verbose_name='Список id тегов',
+        help_text='Теги: обязательное поле',
+        blank=False,
+    )
+    image = models.ImageField(
+        verbose_name='Фото готового блюда',
+        help_text='Картинка: обязательное поле',
+        upload_to='recipes/images/',
+        blank=False,
+        null=False,
+    )
+    name = models.CharField(
+        max_length=MAX_LENGTH_RECIPE_NAME,
+        verbose_name='Название рецепта',
+        help_text='Название рецепта: обязательное поле',
+        blank=False,
+        null=False,
+    )
+    text = models.TextField(
+        verbose_name='Описание рецепта',
+        help_text='Описание рецепта: обязательное поле',
+        blank=False,
+        null=False,
+    )
+    cooking_time = models.PositiveSmallIntegerField(
+        verbose_name='Время приготовления (в минутах)',
+        help_text='Время приготовления: обязательное поле',
+        blank=False,
+        null=False,
+        validators=[
+            MinValueValidator(
+                MIN_COOKING_TIME_MINUTES,
+                message=f'Минимальное время - {MIN_COOKING_TIME_MINUTES} мин.'
+            )
+        ],
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор рецепта',
+        related_name='recipes',
+        blank=False,
+        null=False,
+    )
+    short_url_code = models.CharField(
+        max_length=5,
+        unique=True,
+        blank=False,
+        null=False,
+        editable=False
+    )
+
+    class Meta:
+        ordering = ('name',)
+        verbose_name = 'Рецепт'
+        verbose_name_plural = 'Рецепты'
+
+    def save(self, *args, **kwargs):
+        if not self.short_url_code:
+            # Генерируем уникальный код
+            self.short_url_code = uuid.uuid4().hex[:5]
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Рецепт {self.name} от {self.author.username}.'
+
+
+class RecipeIngredient(models.Model):
+    """Класс для связи рецепта, его ингридиентов, и их количества."""
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепт',
+        related_name='recipe_ingredient_amount',
+    )
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='recipe_ingredient_amount',
+        verbose_name='Ингредиент'
+    )
+    amount = models.PositiveSmallIntegerField(
+        verbose_name='Количество',
+        blank=False,
+        null=False,
+        validators=[
+            MinValueValidator(
+                MIN_AMOUNT_OF_INGREDIENT,
+                message=(
+                    'Минимальное количество любого ингредиента в рецепте: '
+                    f' {MIN_AMOUNT_OF_INGREDIENT} ед.'
+                )
+            )
+        ]
+    )
+
+    class Meta:
+        ordering = ('id',)
+        verbose_name = 'Количество ингредиента в рецепте'
+        verbose_name_plural = 'Количество ингредиента в рецепте'
+        constraints = (
+            models.UniqueConstraint(
+                fields=['recipe', 'ingredient'],
+                name='recipe_ingredient_pair_unique'
+            ),
+        )
+
+    def __str__(self):
+        return f'Ингредиент {self.ingredient.name}: кол-во {self.amount}'
+
+
+class MutualFields(models.Model):
+    """Абстрактный класс для общих полей в таблицах Favorite и ShoppingList."""
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='%(class)s',
+        verbose_name='Пользователь',
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='%(class)s',
+        verbose_name='Рецепт',
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Favorite(MutualFields):
+    """Класс понравившегося рецепта."""
+    class Meta:
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранное'
+        ordering = ('id',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='user_recipe_fav_pair_unique'
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user} лайкнул(-а) {self.recipe}.'
+
+
+class ShoppingList(MutualFields):
+    """Класс списка покупок ингридиентов понравившегося рецепта."""
+    class Meta:
+        verbose_name = 'Список покупок'
+        verbose_name_plural = 'Списки покупок'
+        ordering = ('id',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='user_recipe_cart_pair_unique'
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.user} купит продукты для {self.recipe}.'
