@@ -1,0 +1,4 @@
+# Файл .dockerignore
+venv
+.git
+.env

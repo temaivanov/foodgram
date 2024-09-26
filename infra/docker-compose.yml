@@ -1,17 +1,48 @@
 version: '3.3'
+
+volumes:
+  static:
+  media:
+
 services:
 
+  backend:
+    container_name: foodgram-backend
+    build: ../backend
+    volumes:
+      # Монтируем директорию с кодом бекенда для параллельной отладки.
+      - ../backend:/app
+      - media:/app/media
+      # Статика бекенда будет в директории /static/ в томе.
+      - static:/app/static
+    env_file:
+      - .env
+  
   frontend:
     container_name: foodgram-front
     build: ../frontend
+    # скопируем статику фронтенда в корень тома
+    command: cp -r /app/build/. /static/
     volumes:
+      # Монтируем директорию с кодом фронтенда для параллельной отладки.
       - ../frontend/:/app/result_build/
+      - static:/static
+ 
   nginx:
     container_name: foodgram-proxy
     image: nginx:1.25.4-alpine
     ports:
       - "80:80"
     volumes:
+      # Общая директория статики фронтенда и бекенда.
+      - static:/usr/share/nginx/html/
+      # В контейнере nginx.conf лежит по адресу /etc/nginx/conf.d/default.conf
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
+      # Документация в контейнере лежит по адресу /usr/share/nginx/html/api/docs/
       - ../docs/:/usr/share/nginx/html/api/docs/
+      # Медиафайлы бекенда транслируются из тома media в папку app/media.
+      - media:/app/media
+    depends_on:
+      - backend
+
+

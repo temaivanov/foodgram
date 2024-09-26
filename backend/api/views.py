@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status
 from rest_framework.decorators import action
@@ -33,6 +33,11 @@ from recipes.models import (
     RecipeIngredient
 )
 from users.models import User, Follow
+
+
+def redirect_to_full(request, short_url_code):
+    recipe = get_object_or_404(Recipe, short_url_code=short_url_code)
+    return redirect(f'/recipes/{recipe.id}')
 
 
 class UserViewSet(ModelViewSet):
@@ -213,7 +218,8 @@ class RecipeViewSet(ModelViewSet):
     def get_link(self, request, *args, **kwargs):
         """Получить короткую ссылку на рецепт."""
         recipe = self.get_object()
-        short_link = f"{BASE_URL}{recipe.short_url_code}"
+        short_link = request.build_absolute_uri(
+            f'/api/s/{recipe.short_url_code}')
         return Response({"short-link": short_link}, status=status.HTTP_200_OK)
 
     def recipe_add_unadd(self, request, model, method_serializer, pk):

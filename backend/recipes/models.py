@@ -3,6 +3,7 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
+from django.urls import reverse
 
 from recipes.constants import (
     MAX_LENGTH_TAG_NAME,

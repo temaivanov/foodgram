@@ -142,3 +142,8 @@ static/
 media/
 
 **/.DS_Store
+
+# Others
+node_modules
+
+**/collected_static
