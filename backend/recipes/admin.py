@@ -35,10 +35,17 @@ class RecipeAdmin(admin.ModelAdmin):
 
     inlines = [IngredientInline]
     fields = ('tags', 'image', 'name', 'text', 'cooking_time', 'author')
-    list_display = ('id', 'name', 'author', 'short_url_code')
+    list_display = ('id',
+                    'name',
+                    'author',
+                    'short_url_code',
+                    'count_favorites')
     search_fields = ('name', 'author__username')
     list_filter = ('tags',)
-    # Подсчет количества добавлений в избранное
+
+    @admin.display(description='Добавлений в избранное:')
+    def count_favorites(self, obj):
+        return obj.favorite.count()
 
 
 @admin.register(RecipeIngredient)

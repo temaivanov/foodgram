@@ -23,7 +23,6 @@ from api.serializers import (
     FollowSerializer
 )
 from api.utils import structure_file
-from foodgram.settings import BASE_URL
 from recipes.models import (
     Tag,
     Ingredient,
@@ -33,11 +32,6 @@ from recipes.models import (
     RecipeIngredient
 )
 from users.models import User, Follow
-
-
-def redirect_to_full(request, short_url_code):
-    recipe = get_object_or_404(Recipe, short_url_code=short_url_code)
-    return redirect(f'/recipes/{recipe.id}')
 
 
 class UserViewSet(ModelViewSet):
@@ -302,3 +296,9 @@ class RecipeViewSet(ModelViewSet):
                                      Favorite,
                                      FavoriteShoppingListSerializer,
                                      pk)
+
+
+def redirect_to_full(request, short_url_code):
+    """Перенаправление с короткой ссылки на исходный рецепт."""
+    recipe = get_object_or_404(Recipe, short_url_code=short_url_code)
+    return redirect(f'/recipes/{recipe.id}')
