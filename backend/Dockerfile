@@ -22,4 +22,4 @@ RUN pip install -r requirements.txt --no-cache-dir
 COPY . .
 
 # Команда для запуска Django сервера
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "foodgram.wsgi"]

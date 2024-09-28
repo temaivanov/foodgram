@@ -22,7 +22,7 @@ services:
       - ../backend:/app
       - media:/app/media
       # Статика бекенда будет в директории /static/ в томе.
-      - static:/app/static
+      - static:/backend_static
     env_file:
       - .env
     depends_on: 
@@ -32,11 +32,11 @@ services:
     container_name: foodgram-front
     build: ../frontend
     # скопируем статику фронтенда в корень тома
-    command: cp -r /app/build/. /static/
+    command: cp -r /app/build/. /frontend_static/
     volumes:
       # Монтируем директорию с кодом фронтенда для параллельной отладки.
       - ../frontend/:/app/result_build/
-      - static:/static
+      - static:/frontend_static
  
   nginx:
     container_name: foodgram-proxy

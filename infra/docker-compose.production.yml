@@ -1,0 +1,49 @@
+version: '3.3'
+
+volumes:
+  static:
+  media:
+  pg_data:
+
+services:
+
+  db:
+    image: postgres:13
+    volumes:
+      - pg_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+
+  backend:
+    image: artemivanovspb/foodgram_backend
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+    # 1. Собрать статику,
+    # 2. Скопировать ее в /static/ потому что там ее ожидает Django.
+      - static:/backend_static/
+      - media:/app/media/
+  
+  frontend:
+    image: artemivanovspb/foodgram-front
+    # скопируем статику фронтенда в корень тома
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - static:/frontend_static
+ 
+  nginx:
+    image: nginx:1.25.4-alpine
+    ports:
+      - "8000:80"
+    volumes:
+      # Общая директория статики фронтенда и бекенда.
+      - static:/usr/share/nginx/html/
+      # В контейнере nginx.conf лежит по адресу /etc/nginx/conf.d/default.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      # Медиафайлы бекенда транслируются из app/media в том media.
+      - media:/app/media
+    depends_on:
+      - backend
+
+
