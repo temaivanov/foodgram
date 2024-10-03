@@ -5,9 +5,10 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     """Запрещает пользователям изменять данные профилей друг друга."""
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return obj.id == request.user.id
+        return (
+            request.method in permissions.SAFE_METHODS
+            or obj == request.user
+        )
 
 
 class IsAuthorOrStaffOrReadOnly(permissions.BasePermission):
@@ -21,6 +22,5 @@ class IsAuthorOrStaffOrReadOnly(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
         return (request.user == obj.author
-                or request.user.is_staff
                 or request.user.is_superuser
                 )

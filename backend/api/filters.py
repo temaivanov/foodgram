@@ -4,7 +4,7 @@ from rest_framework.filters import SearchFilter
 from recipes.models import Recipe, Tag
 
 
-class CustomSearchFilter(SearchFilter):
+class NameSearchFilter(SearchFilter):
     # Переопределяем параметр поиска ингредиента.
     search_param = 'name'
 
@@ -18,7 +18,8 @@ class ExtraParamsFilter(filters.FilterSet):
     is_in_shopping_cart = filters.BooleanFilter(
         method='get_shopping_cart_filter',
         label='В Списке покупок')
-    # ordering = filters.OrderingFilter(fields=('id'))
+
+    author = filters.CharFilter(field_name='author__id', label='Авторы')
 
     def get_favorited_filter(self, queryset, name, value):
         user = self.request.user

@@ -8,28 +8,27 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from api.filters import CustomSearchFilter, ExtraParamsFilter
+from api.filters import NameSearchFilter, ExtraParamsFilter
 from api.paginators import PageOrLimitPagination
-from api.permmissions import IsOwnerOrReadOnly, IsAuthorOrStaffOrReadOnly
+from api.permissions import IsOwnerOrReadOnly, IsAuthorOrStaffOrReadOnly
 from api.serializers import (
-    CustomUserCreateSerializer,
-    CustomUserSerializer,
-    PasswordChangeSerializer,
-    TagSerializer,
-    IngredientSerializer,
-    RecipeReadSerializer,
-    RecipeCreateSerializer,
+    UserCreateSerializer,
+    UserSerializer,
     FavoriteShoppingListSerializer,
-    FollowSerializer
+    FollowSerializer,
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    RecipeReadSerializer,
+    TagSerializer
 )
 from api.utils import structure_file
 from recipes.models import (
-    Tag,
+    Favorite,
     Ingredient,
     Recipe,
+    RecipeIngredient,
     ShoppingList,
-    Favorite,
-    RecipeIngredient
+    Tag
 )
 from users.models import User, Follow
 
@@ -47,22 +46,8 @@ class UserViewSet(ModelViewSet):
     # Динамически выберем сериализатор в завсимости от действия.
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
-            return CustomUserSerializer
-        return CustomUserCreateSerializer
-
-    # Расширим встроенный перечень экшенов дополнительными методами.
-    @action(detail=False,
-            methods=['get'],
-            url_path='me',
-            permission_classes=(IsAuthenticated,)
-            )
-    def me(self, request):
-        """Получим информацию о текущем пользователе."""
-
-        serializer = CustomUserSerializer(request.user,
-                                          context={'request': request})
-        return Response(serializer.data,
-                        status=status.HTTP_200_OK)
+            return UserSerializer
+        return UserCreateSerializer
 
     @action(detail=False,
             methods=['put', 'delete'],
@@ -75,10 +60,10 @@ class UserViewSet(ModelViewSet):
             if not request.data:
                 return Response({'detail': 'Файл аватарки не был передан.'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            serializer = CustomUserSerializer(request.user,
-                                              data=request.data,
-                                              partial=True,
-                                              context={'request': request})
+            serializer = UserSerializer(request.user,
+                                        data=request.data,
+                                        partial=True,
+                                        context={'request': request})
             if serializer.is_valid():
                 serializer.save()
                 return Response({"avatar": serializer.data.get('avatar')},
@@ -93,22 +78,6 @@ class UserViewSet(ModelViewSet):
             request.user.save()  # Сохранение изменений в базе данных
         return Response({'detail': 'Аватарка удалена.'},
                         status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=False,
-            methods=['post'],
-            url_path='set_password',
-            permission_classes=(IsAuthenticated,))
-    def set_password(self, request):
-        """Данный метод изменякт пароль текущего пользователя."""
-
-        serializer = PasswordChangeSerializer(data=request.data,
-                                              context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'detail': 'Пароль успешно обновлен.'},
-                            status=status.HTTP_204_NO_CONTENT)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False,
             methods=['get'],
@@ -181,7 +150,7 @@ class IngredientViewSet(ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
-    filter_backends = (CustomSearchFilter,)
+    filter_backends = (NameSearchFilter,)
     search_fields = ('^name',)
     pagination_class = None
 
@@ -201,12 +170,6 @@ class RecipeViewSet(ModelViewSet):
         if self.action == 'list' or self.action == 'retrieve':
             return RecipeReadSerializer
         return RecipeCreateSerializer
-
-    def perform_create(self, serializer):
-        return serializer.save(author=self.request.user)
-
-    def perform_update(self, serializer):
-        return serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['get'], url_path='get-link',)
     def get_link(self, request, *args, **kwargs):

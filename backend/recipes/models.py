@@ -1,18 +1,18 @@
 import uuid
 
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator, MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
 from recipes.constants import (
-    MAX_LENGTH_TAG_NAME,
-    MAX_LENGTH_TAG_SLUG,
-    REGEXP_SLUG,
     MAX_LENGTH_INGRIDIENT_NAME,
     MAX_LENGTH_MEASURMENT_UNIT,
     MAX_LENGTH_RECIPE_NAME,
+    MAX_LENGTH_TAG_NAME,
+    MAX_LENGTH_TAG_SLUG,
+    MIN_AMOUNT_OF_INGREDIENT,
     MIN_COOKING_TIME_MINUTES,
-    MIN_AMOUNT_OF_INGREDIENT
+    REGEXP_SLUG
 )
 from users.models import User
 
@@ -235,6 +235,13 @@ class MutualFields(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('id',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='%(class)s_user_recipe_unique'
+            ),
+        ]
 
 
 class Favorite(MutualFields):
@@ -242,13 +249,6 @@ class Favorite(MutualFields):
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
-        ordering = ('id',)
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='user_recipe_fav_pair_unique'
-            ),
-        ]
 
     def __str__(self):
         return f'{self.user} лайкнул(-а) {self.recipe}.'
@@ -259,13 +259,6 @@ class ShoppingList(MutualFields):
     class Meta:
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
-        ordering = ('id',)
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'],
-                name='user_recipe_cart_pair_unique'
-            ),
-        ]
 
     def __str__(self):
         return f'{self.user} купит продукты для {self.recipe}.'

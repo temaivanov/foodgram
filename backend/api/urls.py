@@ -1,13 +1,14 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
+from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import routers
 
 from api.views import (
-    UserViewSet,
-    TagViewSet,
     IngredientViewSet,
     RecipeViewSet,
+    TagViewSet,
+    UserViewSet,
     redirect_to_full
 )
 
@@ -22,12 +23,18 @@ router.register('recipes', RecipeViewSet, basename='recipes')
 
 
 # Подключаем роутеры в схему сайта:
+# api/users/set_password -- станадртная вью Djoser
+# apu/users/me -- станадртная вью Djoser
 # api/{router} -- все остальные маршруты.
 # api/s/{short_url_code} -- доступ по короткой ссылке.
 # api/auth/token/login/ (Djoser Token Based Authentication)
 # api/auth/token/logout/ (Djoser Token Based Authentication)
 
 urlpatterns = [
+    path('users/set_password/',
+         DjoserUserViewSet.as_view({'post': 'set_password'})),
+    path('users/me/',
+         DjoserUserViewSet.as_view({'get': 'me'})),
     path('', include(router.urls)),
     path('s/<str:short_url_code>/',
          redirect_to_full,

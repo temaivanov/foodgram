@@ -1,7 +1,5 @@
-import base64
-
-from django.core.files.base import ContentFile
-from djoser.serializers import UserCreateSerializer, UserSerializer
+from djoser.serializers import UserCreateSerializer
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from recipes.constants import MAX_LENGTH_RECIPE_NAME
@@ -14,16 +12,19 @@ from recipes.models import (Favorite,
 from users.models import Follow, User
 
 
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-        return super().to_internal_value(data)
+class UserCreateSerializer(UserCreateSerializer):
+    """Переиспользуем сериализатор Djoser для создания юзера."""
+    class Meta:
+        model = User
+        fields = ('id',
+                  'username',
+                  'email',
+                  'first_name',
+                  'last_name',
+                  'password')
 
 
-class CustomUserCreateSerializer(UserCreateSerializer):
+class CustomUserCreateSerializer(serializers.ModelSerializer):
     """Собственный сериализатор создания юзера при регистрации."""
 
     class Meta:
@@ -49,7 +50,7 @@ class CustomUserCreateSerializer(UserCreateSerializer):
         return value
 
 
-class CustomUserSerializer(UserSerializer):
+class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для получения, обновления информации о пользователе"""
 
     is_subscribed = serializers.SerializerMethodField(read_only=True)
@@ -72,44 +73,6 @@ class CustomUserSerializer(UserSerializer):
             following=obj,
         ).exists()
         return subscribe
-
-
-class PasswordChangeSerializer(serializers.ModelSerializer):
-    """Сериализатор для записи нового пароля текущего пользователя."""
-
-    current_password = serializers.CharField(write_only=True)
-    new_password = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = User
-        fields = ('current_password',
-                  'new_password',
-                  )
-
-    def validate(self, data):
-        user = self.context['request'].user
-        current_password = data['current_password']
-        new_password = data['new_password']
-
-        # Проверка, что текущий пароль правильный
-        if not user.check_password(current_password):
-            raise serializers.ValidationError({
-                'current_password': 'Текущий пароль неверный.'
-            })
-
-        # Проверка, что новый пароль отличается от текущего
-        if current_password == new_password:
-            raise serializers.ValidationError({
-                'new_password': 'Новый пароль должен отличаться от текущего.'
-            })
-
-        return data
-
-    def save(self):
-        user = self.context['request'].user
-        new_password = self.validated_data['new_password']
-        user.set_password(new_password)
-        user.save()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -158,7 +121,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     """Сериализатор для READ-операций (GET) с рецептами."""
 
     tags = TagSerializer(many=True)
-    author = CustomUserSerializer(read_only=True)
+    author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(many=True,
                                              source='recipe_ingredient_amount')
     is_favorited = serializers.SerializerMethodField(read_only=True)
@@ -254,6 +217,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Теги не могут повторяться.")
         return value
 
+    def validate_image(self, value):
+        """Проверяем, что изображение не является пустой строкой."""
+        if value == "" or value is None:
+            raise serializers.ValidationError("Картинка обязательна.")
+        return value
+
     def validate_cooking_time(self, value):
         """Проверяем, что время приготовления больше 1."""
         if value < 1:
@@ -290,6 +259,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         Чтобы избежать конфликтов при создании рецепта,
         извлечем теги и ингредиенты, и обработаем их отдельно.
         """
+        # Вынес из вью задание автора по-умолчанию.
+        validated_data['author'] = self.context['request'].user
         # Обработаем провалидированные списки отдельно.
         tags_popped = validated_data.pop('tags')
         ingredients_popped = validated_data.pop('ingredients')
@@ -393,8 +364,19 @@ class FollowSerializer(serializers.ModelSerializer):
     def get_recipes(self, obj):
         limit = self.context['request'].query_params.get('recipes_limit')
         query = obj.recipes.all()
+
+        limit_value = None
         if limit:
-            query = query[: int(limit)]
+            # Пробуем преобразовать limit в целое число.
+            try:
+                limit_value = int(limit)
+            except (ValueError, TypeError):
+                # Зададим limit_value в 0 при ошибках преобразования.
+                limit_value = 0
+
+        if limit_value:
+            query = query[:limit_value]
+
         recipes = FavoriteShoppingListSerializer(query, many=True)
         return recipes.data
 
