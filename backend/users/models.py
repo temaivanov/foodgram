@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.validators import RegexValidator
 from django.db import models
 
 from users.constants import (
@@ -8,12 +7,10 @@ from users.constants import (
     MAX_LENGTH_FIRST_NAME,
     MAX_LENGTH_LAST_NAME,
     MAX_LENGTH_USERNAME,
-    REGEXP_USERNAME
 )
 from users.validators import (
     validate_image_format,
     validate_image_size,
-    validate_username
 )
 
 
