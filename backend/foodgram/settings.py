@@ -160,15 +160,12 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
+    # По умолчанию Djoser исп. username. По условию задания -- email.
     'LOGIN_FIELD': 'email',
-    'HIDE_USERS': False,
     'SERIALIZERS': {
+        # Доступ к users/me/ через вью Djoser с данным сериализатором.
         'current_user': 'api.serializers.UserSerializer',
     },
-    'PERMISSIONS': {
-        'current_user': ['rest_framework.permissions.IsAuthenticated'],
-        'set_password': ['djoser.permissions.CurrentUserOrAdmin'],
-    }
 }
 
-CSRF_TRUSTED_ORIGINS = ['https://diplomaproject.zapto.org']
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', '').split(' ')

@@ -34,7 +34,15 @@ from users.models import User, Follow
 
 
 class UserViewSet(ModelViewSet):
-    """Вьюсет для управления и настройки пользователей."""
+    """
+    Вьюсет для управления и настройки пользователей.
+
+    Эндпоинты:
+    - users/me/
+    - users/set_password/
+    используют стандартные вью Djoser и явно подключены в urls.py
+    до подключения маршрутов UserViewSet.
+    """
 
     queryset = User.objects.all()
     permission_classes = (IsOwnerOrReadOnly,)
@@ -46,8 +54,8 @@ class UserViewSet(ModelViewSet):
     # Динамически выберем сериализатор в завсимости от действия.
     def get_serializer_class(self):
         if self.action == 'list' or self.action == 'retrieve':
-            return UserSerializer
-        return UserCreateSerializer
+            return UserSerializer  # Собственный сериализатор
+        return UserCreateSerializer  # Собственный унаследованный от djoser.
 
     @action(detail=False,
             methods=['put', 'delete'],
@@ -176,7 +184,7 @@ class RecipeViewSet(ModelViewSet):
         """Получить короткую ссылку на рецепт."""
         recipe = self.get_object()
         short_link = request.build_absolute_uri(
-            f'/api/s/{recipe.short_url_code}')
+            f'/s/{recipe.short_url_code}')
         return Response({"short-link": short_link}, status=status.HTTP_200_OK)
 
     def recipe_add_unadd(self, request, model, method_serializer, pk):

@@ -9,7 +9,6 @@ from api.views import (
     RecipeViewSet,
     TagViewSet,
     UserViewSet,
-    redirect_to_full
 )
 
 app_name = 'api'
@@ -26,7 +25,6 @@ router.register('recipes', RecipeViewSet, basename='recipes')
 # api/users/set_password -- станадртная вью Djoser
 # apu/users/me -- станадртная вью Djoser
 # api/{router} -- все остальные маршруты.
-# api/s/{short_url_code} -- доступ по короткой ссылке.
 # api/auth/token/login/ (Djoser Token Based Authentication)
 # api/auth/token/logout/ (Djoser Token Based Authentication)
 
@@ -36,9 +34,6 @@ urlpatterns = [
     path('users/me/',
          DjoserUserViewSet.as_view({'get': 'me'})),
     path('', include(router.urls)),
-    path('s/<str:short_url_code>/',
-         redirect_to_full,
-         name='redirect_to_full'),
     path('auth/', include('djoser.urls.authtoken')),  # токены
 ]
 

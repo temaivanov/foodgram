@@ -22,6 +22,7 @@ class User(AbstractUser):
         verbose_name='Электронная почта',
         help_text='Адрес электронной почты: обязательное поле',
         unique=True,
+        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
         blank=False,
         null=False,
     )
@@ -36,6 +37,7 @@ class User(AbstractUser):
         max_length=MAX_LENGTH_FIRST_NAME,
         verbose_name='Имя',
         help_text='Имя: обязательное поле',
+        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
         blank=False,
         null=False,
     )
@@ -43,6 +45,7 @@ class User(AbstractUser):
         max_length=MAX_LENGTH_LAST_NAME,
         verbose_name='Фамилия',
         help_text='Фамилия: обязательное поле',
+        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
         blank=False,
         null=False,
     )

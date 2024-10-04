@@ -23,6 +23,7 @@ class Tag(models.Model):
         max_length=MAX_LENGTH_TAG_NAME,
         verbose_name='Тег рецепта',
         unique=True,
+        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
         blank=False,
         null=False,
     )
@@ -180,12 +181,12 @@ class RecipeIngredient(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='recipe_ingredient_amount',
+        related_name='recipe_ingredient_amount',  # Ингред и кол-во в рец.
     )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='recipe_ingredient_amount',
+        related_name='+',  # Можно узнать в каких рец. исп. ингредиент.
         verbose_name='Ингредиент'
     )
     amount = models.PositiveSmallIntegerField(
@@ -246,7 +247,7 @@ class MutualFields(models.Model):
 
 class Favorite(MutualFields):
     """Класс понравившегося рецепта."""
-    class Meta:
+    class Meta(MutualFields.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
 
@@ -256,7 +257,7 @@ class Favorite(MutualFields):
 
 class ShoppingList(MutualFields):
     """Класс списка покупок ингридиентов понравившегося рецепта."""
-    class Meta:
+    class Meta(MutualFields.Meta):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
 

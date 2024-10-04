@@ -2,6 +2,7 @@ from django_filters import rest_framework as filters
 from rest_framework.filters import SearchFilter
 
 from recipes.models import Recipe, Tag
+from recipes.models import User
 
 
 class NameSearchFilter(SearchFilter):
@@ -19,7 +20,11 @@ class ExtraParamsFilter(filters.FilterSet):
         method='get_shopping_cart_filter',
         label='В Списке покупок')
 
-    author = filters.CharFilter(field_name='author__id', label='Авторы')
+    author = filters.ModelChoiceFilter(
+        queryset=User.objects.all(),
+        field_name='author',
+        label='Авторы'
+    )
 
     def get_favorited_filter(self, queryset, name, value):
         user = self.request.user
