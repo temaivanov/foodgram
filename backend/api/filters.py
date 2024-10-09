@@ -2,7 +2,7 @@ from django_filters import rest_framework as filters
 from rest_framework.filters import SearchFilter
 
 from recipes.models import Recipe, Tag
-from recipes.models import User
+from users.models import User
 
 
 class NameSearchFilter(SearchFilter):

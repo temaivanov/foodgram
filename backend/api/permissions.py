@@ -2,25 +2,31 @@ from rest_framework import permissions
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
-    """Запрещает пользователям изменять данные профилей друг друга."""
+    """
+    Запрещает пользователям изменять данные профилей друг друга.
 
-    def has_object_permission(self, request, view, obj):
-        return (
-            request.method in permissions.SAFE_METHODS
-            or obj == request.user
-        )
+    Метод has_permission обеспечивает доступ без авторизации к
+    списку пользователей, но требует авторизацию для доступа к /me/.
+    """
 
-
-class IsAuthorOrStaffOrReadOnly(permissions.BasePermission):
-    """Доступ для автора и суперюзера."""
     def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user.is_authenticated
+        return request.user.is_authenticated if view.action == 'me' else True
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return (request.user == obj.author
-                or request.user.is_superuser
-                )
+        return (request.method in permissions.SAFE_METHODS
+                or obj == request.user)
+
+
+class IsAuthorOrReadOnly(permissions.BasePermission):
+    """
+    Доступ к редактированию рецепта для автора.
+    Для остальных категорий пользователей доступ только на чтение.
+    """
+
+    def has_permission(self, request, view):
+        return (request.method in permissions.SAFE_METHODS
+                or request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj):
+        return (request.method in permissions.SAFE_METHODS
+                or request.user == obj.author)

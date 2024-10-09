@@ -147,3 +147,5 @@ media/
 node_modules
 
 **/collected_static
+
+**/db.sqlite3.bak

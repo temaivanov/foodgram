@@ -160,11 +160,13 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
-    # По умолчанию Djoser исп. username. По условию задания -- email.
-    'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
-        # Доступ к users/me/ через вью Djoser с данным сериализатором.
+        'user': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
+    },
+    'PERMISSIONS': {
+        'user': ['api.permissions.IsOwnerOrReadOnly'],
+        'user_list': ['rest_framework.permissions.AllowAny'],
     },
 }
 

@@ -22,7 +22,9 @@ class User(AbstractUser):
         verbose_name='Электронная почта',
         help_text='Адрес электронной почты: обязательное поле',
         unique=True,
-        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
+        # По умолчанию поле email - optional (blank=True),
+        # но необходимо нам при регистрации. Поэтому, зададим его явно.
+        # Справка: https://docs.djangoproject.com/en/5.1/ref/contrib/auth/
         blank=False,
         null=False,
     )
@@ -37,7 +39,7 @@ class User(AbstractUser):
         max_length=MAX_LENGTH_FIRST_NAME,
         verbose_name='Имя',
         help_text='Имя: обязательное поле',
-        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
+        # Аналогично полю email, см. комментарий и справку.
         blank=False,
         null=False,
     )
@@ -45,7 +47,7 @@ class User(AbstractUser):
         max_length=MAX_LENGTH_LAST_NAME,
         verbose_name='Фамилия',
         help_text='Фамилия: обязательное поле',
-        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
+        # Аналогично полю email, см. комментарий и справку.
         blank=False,
         null=False,
     )
@@ -58,10 +60,12 @@ class User(AbstractUser):
         null=True
     )
 
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    USERNAME_FIELD = 'email'
+
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        ordering = ('id',)
 
     def __str__(self):
         return self.username

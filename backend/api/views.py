@@ -2,7 +2,7 @@ from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -10,9 +10,8 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from api.filters import NameSearchFilter, ExtraParamsFilter
 from api.paginators import PageOrLimitPagination
-from api.permissions import IsOwnerOrReadOnly, IsAuthorOrStaffOrReadOnly
+from api.permissions import IsAuthorOrReadOnly, IsOwnerOrReadOnly
 from api.serializers import (
-    UserCreateSerializer,
     UserSerializer,
     FavoriteShoppingListSerializer,
     FollowSerializer,
@@ -33,15 +32,16 @@ from recipes.models import (
 from users.models import User, Follow
 
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(viewsets.GenericViewSet):
     """
     Вьюсет для управления и настройки пользователей.
 
     Эндпоинты:
-    - users/me/
-    - users/set_password/
-    используют стандартные вью Djoser и явно подключены в urls.py
-    до подключения маршрутов UserViewSet.
+    - users/me/avatar [PUT, DELETE],
+    - users/{pk}/subscribe [GET],
+    - users/subscriptions/ [POST, DELETE].
+
+    Прочие методы /users/... обрабатываются встроенными вью Djoser.
     """
 
     queryset = User.objects.all()
@@ -50,12 +50,7 @@ class UserViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend,
                        filters.OrderingFilter)
     ordering = ('-id',)
-
-    # Динамически выберем сериализатор в завсимости от действия.
-    def get_serializer_class(self):
-        if self.action == 'list' or self.action == 'retrieve':
-            return UserSerializer  # Собственный сериализатор
-        return UserCreateSerializer  # Собственный унаследованный от djoser.
+    serializer_class = UserSerializer
 
     @action(detail=False,
             methods=['put', 'delete'],
@@ -167,7 +162,7 @@ class RecipeViewSet(ModelViewSet):
     """Вьюсет для пользовательский CRUD-операций с рецептами."""
 
     queryset = Recipe.objects.all()
-    permission_classes = (IsAuthorOrStaffOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly,)
     filterset_class = ExtraParamsFilter
     filter_backends = (DjangoFilterBackend,
                        filters.OrderingFilter)

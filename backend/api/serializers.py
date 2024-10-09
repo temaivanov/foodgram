@@ -1,4 +1,3 @@
-from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
@@ -10,18 +9,6 @@ from recipes.models import (Favorite,
                             ShoppingList,
                             Tag)
 from users.models import Follow, User
-
-
-class UserCreateSerializer(UserCreateSerializer):
-    """Переиспользуем сериализатор Djoser для создания юзера."""
-    class Meta:
-        model = User
-        fields = ('id',
-                  'username',
-                  'email',
-                  'first_name',
-                  'last_name',
-                  'password')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -96,8 +83,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True,
-                                             source='recipe_ingredient_amount')
+    ingredients = RecipeIngredientSerializer(many=True,)
     is_favorited = serializers.SerializerMethodField(read_only=True)
     is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
 
@@ -272,7 +258,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags_popped = validated_data.pop('tags')
         ingredients_popped = validated_data.pop('ingredients')
         # Очищаем теги и ингредиенты у текущего рецепта перед обновлением.
-        instance.ingredients.clear()
+        instance.ingredients.all().delete()
         instance.tags.clear()
         # Обновляем оставшиеся поля рецепта новыми значениями.
         for key, value in validated_data.items():

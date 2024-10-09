@@ -1,7 +1,7 @@
 import uuid
 
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, RegexValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from recipes.constants import (
@@ -12,7 +12,6 @@ from recipes.constants import (
     MAX_LENGTH_TAG_SLUG,
     MIN_AMOUNT_OF_INGREDIENT,
     MIN_COOKING_TIME_MINUTES,
-    REGEXP_SLUG
 )
 from users.models import User
 
@@ -23,18 +22,11 @@ class Tag(models.Model):
         max_length=MAX_LENGTH_TAG_NAME,
         verbose_name='Тег рецепта',
         unique=True,
-        # Чтобы не забыть настройки по умолчанию у полей, задю их явно.
-        blank=False,
-        null=False,
     )
     slug = models.SlugField(
         max_length=MAX_LENGTH_TAG_SLUG,
         verbose_name='Слаг',
         unique=True,
-        blank=False,
-        null=False,
-        validators=[RegexValidator(regex=REGEXP_SLUG,
-                                   message='Неверный формат')],
     )
 
     class Meta:
@@ -69,16 +61,12 @@ class Ingredient(models.Model):
         max_length=MAX_LENGTH_INGRIDIENT_NAME,
         verbose_name='Ингредиент',
         help_text='Ингредиент: обязательное поле',
-        blank=False,
-        null=False,
     )
 
     measurement_unit = models.CharField(
         max_length=MAX_LENGTH_MEASURMENT_UNIT,
         verbose_name='Единица измерения',
         help_text='Единица измерения: обязательное поле',
-        blank=False,
-        null=False,
     )
 
     class Meta:
@@ -98,45 +86,29 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     """Класс, описывающий структуру рецепта."""
-    ingredients = models.ManyToManyField(
-        Ingredient,
-        # Промежуточная модель для хранения количества ингредиентов:
-        through='RecipeIngredient',
-        verbose_name='Перечень ингредиентов',
-        help_text='Перечень ингридиентов: обязательное поле',
-        blank=False,
-    )
+
     tags = models.ManyToManyField(
         Tag,
         verbose_name='Список id тегов',
         help_text='Теги: обязательное поле',
-        blank=False,
     )
     image = models.ImageField(
         verbose_name='Фото готового блюда',
         help_text='Картинка: обязательное поле',
         upload_to='recipes/images/',
-        blank=False,
-        null=False,
     )
     name = models.CharField(
         max_length=MAX_LENGTH_RECIPE_NAME,
         verbose_name='Название рецепта',
         help_text='Название рецепта: обязательное поле',
-        blank=False,
-        null=False,
     )
     text = models.TextField(
         verbose_name='Описание рецепта',
         help_text='Описание рецепта: обязательное поле',
-        blank=False,
-        null=False,
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления (в минутах)',
         help_text='Время приготовления: обязательное поле',
-        blank=False,
-        null=False,
         validators=[
             MinValueValidator(
                 MIN_COOKING_TIME_MINUTES,
@@ -149,14 +121,10 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Автор рецепта',
         related_name='recipes',
-        blank=False,
-        null=False,
     )
     short_url_code = models.CharField(
         max_length=5,
         unique=True,
-        blank=False,
-        null=False,
         editable=False
     )
 
@@ -181,7 +149,7 @@ class RecipeIngredient(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Рецепт',
-        related_name='recipe_ingredient_amount',  # Ингред и кол-во в рец.
+        related_name='ingredients',  # Ингред и кол-во в рец.
     )
     ingredient = models.ForeignKey(
         Ingredient,
@@ -191,8 +159,6 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
-        blank=False,
-        null=False,
         validators=[
             MinValueValidator(
                 MIN_AMOUNT_OF_INGREDIENT,
