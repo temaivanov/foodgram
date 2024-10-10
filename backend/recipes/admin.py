@@ -1,4 +1,7 @@
+from django.forms.models import BaseInlineFormSet
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+
 
 from recipes.models import (
     Favorite,
@@ -8,6 +11,37 @@ from recipes.models import (
     ShoppingList,
     Tag
 )
+
+
+class IngredientInlineFormSet(BaseInlineFormSet):
+    """
+    Класс для собственной логики валидации формсета в админ-панели.
+    Необходим для того, чтобы нельзя было создать рецепт без ингредиентов
+    и/или количества из админ-панели Django.
+
+    Переопределяет стандартный метод валидации clean() для inline-форм.
+    """
+    def clean(self):
+        # Вызовем родительский метод clean() чтобы сохранить стандартное
+        # поведение валидации. Так, базовые проверки выполнятся до
+        # кастомной логики.
+        super().clean()
+        # Получим очищенные данные всех форм из атрибута 'cleaned_data'.
+        data = getattr(self, 'cleaned_data', None)
+
+        if data:
+            # Если формсет не содержит ингредиентов, то вернем ошибку.
+            if not data:
+                raise ValidationError('Укажите хотя бы один ингредиент.')
+            if all(line.get('DELETE') for line in data):
+                raise ValidationError('Нужно оствить хотя бы один ингредиент.')
+            if not all(
+                line.get('ingredient') and line.get('amount')
+                for line in data
+            ):
+                raise ValidationError(
+                    'Ингредиенты и/или их кол-во не должны быть пустыми.'
+                )
 
 
 @admin.register(Tag)
@@ -30,6 +64,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 class IngredientInline(admin.TabularInline):
     model = RecipeIngredient
+    formset = IngredientInlineFormSet
 
 
 @admin.register(Recipe)
