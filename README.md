@@ -1,14 +1,16 @@
 
 # Проект Foodgram
-Проект "Foodgram" – это "продуктовый помощник". На этом сервисе пользователи могут публиковать рецепты, подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное», а перед походом в магазин скачивать сводный список продуктов, необходимых для приготовления одного или нескольких выбранных блюд.
 
-Проект доступен по адресу https://diplomaproject.zapto.org/recipes
-Для доступа в админ-панель, свяжитесь со мной: artyom.ivanov.spb@gmail.com (можно через "Пачку")
+Проект "Foodgram" – это онлайн-каталог пользовательских рецептов,и утилита для составления списка покупок. Также, это заключительный проект курса по бэкенд-разработке на Python. 
 
+С помощью этого сервиса пользователи могут публиковать рецепты, подписываться на публикации других пользователей, добавлять понравившиеся рецепты в список «Избранное», а перед походом в магазин скачивать сводный список продуктов, необходимых для приготовления одного или нескольких выбранных блюд.
+
+Адрес: https://diplomaproject.zapto.org/ (в настоящее время хост более недоступен, требуется передеплой на другой хост.)
 
 ## Установка и локальный запуск
+Выполните следующие шаги для того чтобы запустить веб-приложение локально на вашем компьютере. Для запуска потребуется установить Docker.
 
-1. Клонировать репозиторий и перейти в него в командной строке:
+1. Клонируйте репозиторий на ваш компьютер и перейдите в него в командной строке:
 
 ```
 git@github.com:temaivanov/foodgram.git
@@ -16,7 +18,7 @@ git@github.com:temaivanov/foodgram.git
 cd foodgram
 ```
 
-2. Создайте файл .env и заполните его своими данными по примеру ниже. 
+2. В директории foodgram cоздайте файл .env, и заполните его своими данными (credentials) по примеру ниже. 
 ```
 # --- Django-доступы ---
 DJANGO_SECRET_KEY='key'
@@ -41,7 +43,7 @@ DB_PORT={port}
 CSRF_TRUSTED_ORIGINS=https://вашдомен.com
 ```
 
-3. Cоздайте и активируйте виртуальное окружение
+3. Cоздайте и активируйте виртуальное окружение Python из директории foodgram:
 ```
 python3 -m venv venv
 
@@ -80,6 +82,26 @@ docker-compose exec backend python manage.py loaddata ingredients_transformed.js
 - Docker
 - Nginx
 
+
+
+## Скриншоты
+
+![Заглавная страница; без логина](https://github.com/temaivanov/foodgram_images/blob/main/Screenshot%202025-01-19%20at%2021.19.20.png)
+
+![Заглавная страница; c логином](https://github.com/temaivanov/foodgram_images/blob/main/screencapture-diplomaproject-zapto-org-recipes-2024-10-16-11_27_28.png)
+
+![Страница рецепта; c логином](https://github.com/temaivanov/foodgram_images/blob/main/screencapture-diplomaproject-zapto-org-recipes-5-2024-10-16-11_29_33.png)
+
+![Страница списка покупок; c логином](https://github.com/temaivanov/foodgram_images/blob/main/screencapture-diplomaproject-zapto-org-cart-2024-10-16-11_29_01.png)
+
+![Страница подписок; c логином](https://github.com/temaivanov/foodgram_images/blob/main/screencapture-diplomaproject-zapto-org-subscriptions-2024-10-16-11_28_28.png)
+
+![Страница смены пароля; c логином](https://github.com/temaivanov/foodgram_images/blob/main/screencapture-diplomaproject-zapto-org-change-password-2024-10-16-11_28_40.png)
+
+
 ## Автор
 
 Выполнил Артем Иванов https://github.com/temaivanov
+
+artyom.ivanov.spb@gmail.com
+
